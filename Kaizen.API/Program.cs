@@ -12,6 +12,7 @@ builder.Services.AddDbContext<KaizenDbContext>(options =>
 
 //Services
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IWorkoutService, WorkoutService>();
 
 // Auth0 JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

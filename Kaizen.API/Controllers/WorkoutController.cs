@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Kaizen.API.Data;
 using Kaizen.API.Models;
+using Kaizen.API.Services;
 using System.Security.Claims;
 
 namespace Kaizen.API.Controllers;
@@ -12,33 +11,27 @@ namespace Kaizen.API.Controllers;
 [Authorize]
 public class WorkoutController : ControllerBase
 {
-    private readonly KaizenDbContext _context;
+    private readonly IWorkoutService _workoutService;
 
-    public WorkoutController(KaizenDbContext context)
+    public WorkoutController(IWorkoutService workoutService)
     {
-        _context = context;
+        _workoutService = workoutService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-    //TEMPLATES (publika)
 
     [HttpGet("templates")]
     [AllowAnonymous]
     public async Task<ActionResult<List<WorkoutTemplate>>> GetTemplates()
     {
-        return await _context.WorkoutTemplates
-            .Include(t => t.Exercises)
-            .ToListAsync();
+        return await _workoutService.GetTemplatesAsync();
     }
 
     [HttpGet("templates/{id}")]
     [AllowAnonymous]
     public async Task<ActionResult<WorkoutTemplate>> GetTemplate(int id)
     {
-        var template = await _context.WorkoutTemplates
-            .Include(t => t.Exercises)
-            .FirstOrDefaultAsync(t => t.Id == id);
+        var template = await _workoutService.GetTemplateAsync(id);
 
         if (template == null)
             return NotFound();
@@ -46,30 +39,16 @@ public class WorkoutController : ControllerBase
         return template;
     }
 
-    //WORKOUT LOGS (användarens)
-
     [HttpGet("logs")]
     public async Task<ActionResult<List<WorkoutLog>>> GetLogs([FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
-        var query = _context.WorkoutLogs
-            .Include(w => w.Exercises)
-            .Where(w => w.UserId == GetUserId());
-
-        if (from.HasValue)
-            query = query.Where(w => w.Date >= from.Value);
-
-        if (to.HasValue)
-            query = query.Where(w => w.Date <= to.Value);
-
-        return await query.OrderByDescending(w => w.Date).ToListAsync();
+        return await _workoutService.GetLogsAsync(GetUserId(), from, to);
     }
 
     [HttpGet("logs/{id}")]
     public async Task<ActionResult<WorkoutLog>> GetLog(int id)
     {
-        var log = await _context.WorkoutLogs
-            .Include(w => w.Exercises)
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == GetUserId());
+        var log = await _workoutService.GetLogAsync(GetUserId(), id);
 
         if (log == null)
             return NotFound();
@@ -80,25 +59,17 @@ public class WorkoutController : ControllerBase
     [HttpPost("logs")]
     public async Task<ActionResult<WorkoutLog>> CreateLog(WorkoutLog log)
     {
-        log.UserId = GetUserId();
-
-        _context.WorkoutLogs.Add(log);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetLog), new { id = log.Id }, log);
+        var created = await _workoutService.CreateLogAsync(GetUserId(), log);
+        return CreatedAtAction(nameof(GetLog), new { id = created.Id }, created);
     }
 
     [HttpDelete("logs/{id}")]
     public async Task<IActionResult> DeleteLog(int id)
     {
-        var log = await _context.WorkoutLogs
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == GetUserId());
+        var deleted = await _workoutService.DeleteLogAsync(GetUserId(), id);
 
-        if (log == null)
+        if (!deleted)
             return NotFound();
-
-        _context.WorkoutLogs.Remove(log);
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
