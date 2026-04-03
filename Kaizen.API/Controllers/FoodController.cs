@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Kaizen.API.Data;
 using Kaizen.API.Models;
+using Kaizen.API.Services;
 using System.Security.Claims;
 
 namespace Kaizen.API.Controllers;
@@ -12,34 +11,27 @@ namespace Kaizen.API.Controllers;
 [Authorize]
 public class FoodController : ControllerBase
 {
-    private readonly KaizenDbContext _context;
+    private readonly IFoodService _foodService;
 
-    public FoodController(KaizenDbContext context)
+    public FoodController(IFoodService foodService)
     {
-        _context = context;
+        _foodService = foodService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-    //  INGREDIENTS (sökbara) 
 
     [HttpGet("ingredients")]
     [AllowAnonymous]
     public async Task<ActionResult<List<Ingredient>>> SearchIngredients([FromQuery] string? q)
     {
-        var query = _context.Ingredients.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(q))
-            query = query.Where(i => i.Name.ToLower().Contains(q.ToLower()));
-
-        return await query.Take(20).ToListAsync();
+        return await _foodService.SearchIngredientsAsync(q);
     }
 
     [HttpGet("ingredients/{id}")]
     [AllowAnonymous]
     public async Task<ActionResult<Ingredient>> GetIngredient(int id)
     {
-        var ingredient = await _context.Ingredients.FindAsync(id);
+        var ingredient = await _foodService.GetIngredientAsync(id);
 
         if (ingredient == null)
             return NotFound();
@@ -47,69 +39,33 @@ public class FoodController : ControllerBase
         return ingredient;
     }
 
-    // FOOD LOGS (användarens) 
-
     [HttpGet("logs")]
     public async Task<ActionResult<List<FoodLog>>> GetLogs([FromQuery] DateTime? date)
     {
-        var query = _context.FoodLogs
-            .Include(f => f.Ingredient)
-            .Where(f => f.UserId == GetUserId());
-
-        if (date.HasValue)
-            query = query.Where(f => f.Date.Date == date.Value.Date);
-
-        return await query.OrderByDescending(f => f.Date).ToListAsync();
+        return await _foodService.GetLogsAsync(GetUserId(), date);
     }
 
     [HttpPost("logs")]
     public async Task<ActionResult<FoodLog>> CreateLog(FoodLog log)
     {
-        log.UserId = GetUserId();
-
-        _context.FoodLogs.Add(log);
-        await _context.SaveChangesAsync();
-
-        await _context.Entry(log).Reference(f => f.Ingredient).LoadAsync();
-
-        return CreatedAtAction(nameof(GetLogs), log);
+        var created = await _foodService.CreateLogAsync(GetUserId(), log);
+        return CreatedAtAction(nameof(GetLogs), created);
     }
 
     [HttpDelete("logs/{id}")]
     public async Task<IActionResult> DeleteLog(int id)
     {
-        var log = await _context.FoodLogs
-            .FirstOrDefaultAsync(f => f.Id == id && f.UserId == GetUserId());
+        var deleted = await _foodService.DeleteLogAsync(GetUserId(), id);
 
-        if (log == null)
+        if (!deleted)
             return NotFound();
-
-        _context.FoodLogs.Remove(log);
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
 
-    // DAILY SUMMARY
-
     [HttpGet("summary")]
-    public async Task<ActionResult<object>> GetDailySummary([FromQuery] DateTime date)
+    public async Task<ActionResult<DailySummary>> GetDailySummary([FromQuery] DateTime date)
     {
-        var logs = await _context.FoodLogs
-            .Include(f => f.Ingredient)
-            .Where(f => f.UserId == GetUserId() && f.Date.Date == date.Date)
-            .ToListAsync();
-
-        var summary = new
-        {
-            Date = date.Date,
-            TotalCalories = logs.Sum(f => f.Ingredient.Calories * f.AmountGrams / 100),
-            TotalProtein = logs.Sum(f => f.Ingredient.Protein * f.AmountGrams / 100),
-            TotalCarbs = logs.Sum(f => f.Ingredient.Carbs * f.AmountGrams / 100),
-            TotalFat = logs.Sum(f => f.Ingredient.Fat * f.AmountGrams / 100),
-            Items = logs.Count
-        };
-
-        return summary;
+        return await _foodService.GetDailySummaryAsync(GetUserId(), date);
     }
 }
