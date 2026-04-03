@@ -15,6 +15,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IWorkoutService, WorkoutService>();
 builder.Services.AddScoped<IFoodService, FoodService>();
 builder.Services.AddScoped<IWeightService, WeightService>();
+builder.Services.AddScoped<IWeeklySummaryService, WeeklySummaryService>();
 
 // Auth0 JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
