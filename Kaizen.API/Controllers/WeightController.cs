@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Kaizen.API.Data;
 using Kaizen.API.Models;
+using Kaizen.API.Services;
 using System.Security.Claims;
 
 namespace Kaizen.API.Controllers;
@@ -12,11 +11,11 @@ namespace Kaizen.API.Controllers;
 [Authorize]
 public class WeightController : ControllerBase
 {
-    private readonly KaizenDbContext _context;
+    private readonly IWeightService _weightService;
 
-    public WeightController(KaizenDbContext context)
+    public WeightController(IWeightService weightService)
     {
-        _context = context;
+        _weightService = weightService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -24,51 +23,23 @@ public class WeightController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<WeightLog>>> GetLogs([FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
-        var query = _context.WeightLogs
-            .Where(w => w.UserId == GetUserId());
-
-        if (from.HasValue)
-            query = query.Where(w => w.Date >= from.Value);
-
-        if (to.HasValue)
-            query = query.Where(w => w.Date <= to.Value);
-
-        return await query.OrderByDescending(w => w.Date).ToListAsync();
+        return await _weightService.GetLogsAsync(GetUserId(), from, to);
     }
 
     [HttpPost]
     public async Task<ActionResult<WeightLog>> CreateLog(WeightLog log)
     {
-        log.UserId = GetUserId();
-
-        // En vikt per dag - ersätt om finns
-        var existing = await _context.WeightLogs
-            .FirstOrDefaultAsync(w => w.UserId == log.UserId && w.Date.Date == log.Date.Date);
-
-        if (existing != null)
-        {
-            existing.Weight = log.Weight;
-            await _context.SaveChangesAsync();
-            return Ok(existing);
-        }
-
-        _context.WeightLogs.Add(log);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetLogs), log);
+        var result = await _weightService.LogWeightAsync(GetUserId(), log);
+        return Ok(result);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteLog(int id)
     {
-        var log = await _context.WeightLogs
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == GetUserId());
+        var deleted = await _weightService.DeleteLogAsync(GetUserId(), id);
 
-        if (log == null)
+        if (!deleted)
             return NotFound();
-
-        _context.WeightLogs.Remove(log);
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
