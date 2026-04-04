@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Kaizen.API.Models;
 using Kaizen.API.Services;
+using Kaizen.API.DTOs;
 using System.Security.Claims;
 
 namespace Kaizen.API.Controllers;
@@ -57,9 +58,9 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpPost("logs")]
-    public async Task<ActionResult<WorkoutLog>> CreateLog(WorkoutLog log)
+    public async Task<ActionResult<WorkoutLog>> CreateLog(CreateWorkoutLogDto dto)
     {
-        var created = await _workoutService.CreateLogAsync(GetUserId(), log);
+        var created = await _workoutService.CreateLogAsync(GetUserId(), dto);
         return CreatedAtAction(nameof(GetLog), new { id = created.Id }, created);
     }
 

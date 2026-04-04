@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Kaizen.API.Data;
 using Kaizen.API.Models;
+using Kaizen.API.DTOs;
 
 namespace Kaizen.API.Services;
 
@@ -49,9 +50,23 @@ public class WorkoutService : IWorkoutService
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
     }
 
-    public async Task<WorkoutLog> CreateLogAsync(string userId, WorkoutLog log)
+    public async Task<WorkoutLog> CreateLogAsync(string userId, CreateWorkoutLogDto dto)
     {
-        log.UserId = userId;
+        var log = new WorkoutLog
+        {
+            UserId = userId,
+            Date = dto.Date,
+            Name = dto.Name,
+            Notes = dto.Notes,
+            Exercises = dto.Exercises.Select(e => new ExerciseLog
+            {
+                ExerciseName = e.ExerciseName,
+                Sets = e.Sets,
+                Reps = e.Reps,
+                Weight = e.Weight
+            }).ToList()
+        };
+
         _context.WorkoutLogs.Add(log);
         await _context.SaveChangesAsync();
         return log;
