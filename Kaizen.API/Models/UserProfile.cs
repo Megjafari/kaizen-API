@@ -9,4 +9,5 @@ public class UserProfile
     public int Age { get; set; }
     public string Gender { get; set; } = string.Empty;
     public string Goal { get; set; } = string.Empty; // lose/maintain/gain
+    public string? ProfileImageUrl { get; set; }
 }

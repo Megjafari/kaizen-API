@@ -8,4 +8,5 @@ public interface IProfileService
     Task<UserProfile> CreateProfileAsync(string userId, UserProfile profile);
     Task<UserProfile?> UpdateProfileAsync(string userId, UserProfile updated);
     Task<bool> DeleteAccountAsync(string userId);
+    Task UpdateProfileImageAsync(string userId, string imageUrl);
 }

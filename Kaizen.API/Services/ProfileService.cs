@@ -64,4 +64,14 @@ public class ProfileService : IProfileService
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task UpdateProfileImageAsync(string userId, string imageUrl)
+    {
+        var profile = await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile != null)
+        {
+            profile.ProfileImageUrl = imageUrl;
+            await _context.SaveChangesAsync();
+        }
+    }
 }

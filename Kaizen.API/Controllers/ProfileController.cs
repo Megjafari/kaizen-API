@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Kaizen.API.Models;
 using Kaizen.API.Services;
 using System.Security.Claims;
+using Kaizen.API.DTOs;
 
 namespace Kaizen.API.Controllers;
 
@@ -13,11 +14,21 @@ public class ProfileController : ControllerBase
 {
     private readonly IProfileService _profileService;
 
-    public ProfileController(IProfileService profileService)
+    private readonly IImageService _imageService;
+
+    public ProfileController(IProfileService profileService, IImageService imageService)
     {
         _profileService = profileService;
+        _imageService = imageService;   
     }
 
+    [HttpPost("image")]
+    public async Task<ActionResult<string>> UploadProfileImage([FromBody] ImageUploadDto dto)
+    {
+        var imageUrl = await _imageService.UploadImageAsync(dto.Base64Image);
+        await _profileService.UpdateProfileImageAsync(GetUserId(), imageUrl);
+        return Ok(new { url = imageUrl });
+    }
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
