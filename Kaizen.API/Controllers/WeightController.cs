@@ -33,6 +33,17 @@ public class WeightController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateLog(int id, WeightLog log)
+    {
+        var updated = await _weightService.UpdateLogAsync(GetUserId(), id, log);
+        
+        if (updated == null)
+            return NotFound();
+        
+        return Ok(updated);
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteLog(int id)
     {

@@ -58,4 +58,18 @@ public class WeightService : IWeightService
         await _context.SaveChangesAsync();
         return true;
     }
+    public async Task<WeightLog?> UpdateLogAsync(string userId, int id, WeightLog log)
+    {
+        var existing = await _context.WeightLogs
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+        
+        if (existing == null)
+            return null;
+        
+        existing.Weight = log.Weight;
+        existing.Date = DateTime.SpecifyKind(log.Date, DateTimeKind.Utc);
+        
+        await _context.SaveChangesAsync();
+        return existing;
+    }
 }
