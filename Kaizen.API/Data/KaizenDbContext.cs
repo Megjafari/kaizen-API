@@ -15,6 +15,7 @@ public class KaizenDbContext : DbContext
     public DbSet<Ingredient> Ingredients => Set<Ingredient>();
     public DbSet<FoodLog> FoodLogs => Set<FoodLog>();
     public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
+    public DbSet<ProgressPhoto> ProgressPhotos => Set<ProgressPhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
