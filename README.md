@@ -45,7 +45,9 @@ Kaizen API is the backend service for the Kaizen fitness tracking application. I
 
 **Live API:** [https://kaizen-api-production-ce18.up.railway.app](https://kaizen-api-production-ce18.up.railway.app)
 
-**Frontend:** [https://kaizen.meghdadjafari.dev](https://kaizen.meghdadjafari.dev)
+**Live app:** [https://kaizen.meghdadjafari.dev](https://kaizen.meghdadjafari.dev)
+
+**Frontend repo:** [https://github.com/Megjafari/kaizen-frontend](https://github.com/Megjafari/kaizen-frontend)
 
 ---
 
