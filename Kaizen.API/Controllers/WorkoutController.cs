@@ -41,8 +41,14 @@ public class WorkoutController : ControllerBase
     }
 
     [HttpGet("logs")]
-    public async Task<ActionResult<List<WorkoutLog>>> GetLogs([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+    public async Task<ActionResult<List<WorkoutLog>>> GetLogs([FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] DateTime? date)
     {
+        if (date.HasValue)
+        {
+            var startOfDay = DateTime.SpecifyKind(date.Value.Date, DateTimeKind.Utc);
+            var endOfDay = startOfDay.AddDays(1);
+            return await _workoutService.GetLogsAsync(GetUserId(), startOfDay, endOfDay);
+        }
         return await _workoutService.GetLogsAsync(GetUserId(), from, to);
     }
 
